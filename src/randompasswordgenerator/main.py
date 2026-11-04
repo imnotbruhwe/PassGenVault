@@ -1,30 +1,44 @@
-import TOF
+import argparse
 import generator
+
+
 def main():
-    while True:
-            print("Input the length of the password:")
-            length = input()
-            length = int(length)
-            if length <= 3 :
-                print("The length of the password must be greater than 3")
-            else:
-                break
-    while True:
-        try:
-            print("Do you want the password to have numbers? y/n:")
-            numbers = TOF.TrueOrFalse(input())
-            break
-        except ValueError: print("Please try again, type y(Yes) or n(No)")
+    parser = argparse.ArgumentParser(description="Cryptographically secure password generator.")
 
-    while True:
-        try:
-            print("Do you want the password to have special characters? y/n:")
-            specialchar = TOF.TrueOrFalse(input())
-            break
-        except ValueError: print("Please try again, type y(Yes) or n(No)")
+    parser.add_argument(
+        '-l', '--length',
+        type=int,
+        default=8,
+        help="Length of the password (must be strictly greater than 3)."
+    )
 
-    result = generator.generate(length, numbers, specialchar)
-    print("Your password is:")
+    parser.add_argument(
+        '--no-numbers',
+        dest='numbers',
+        action='store_false',
+        help="Exclude numbers from the generated password."
+    )
+
+    parser.add_argument(
+        '--no-special',
+        dest='specialchar',
+        action='store_false',
+        help="Exclude special characters from the generated password."
+    )
+
+    # Krok 3: Analiza wektora V w czasie Θ(1)
+    args = parser.parse_args()
+
+    # Krok 4: Walidacja niezmiennika wejściowego (n > 3)
+    if args.length <= 3:
+        parser.error("The length of the password must be greater than 3.")
+
+    # Krok 5: Wywołanie algorytmu podrzędnego
+    result = generator.generate(args.length, args.numbers, args.specialchar)
+
+    print("Your generated password is:")
     print(result)
+
+
 if __name__ == '__main__':
     main()
