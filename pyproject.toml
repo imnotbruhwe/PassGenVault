@@ -7,7 +7,9 @@ authors = [
     { name = "Filip Wojtczak", email = "wojtczakkf@gmail.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "cryptography>=50.0.2",
+]
 
 [project.scripts]
 randompasswordgenerator = "randompasswordgenerator:main"
