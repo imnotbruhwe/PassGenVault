@@ -1,10 +1,20 @@
 import argparse
 import generator
-
+import manager
 
 def main():
     parser = argparse.ArgumentParser(description="Cryptographically secure password generator.")
 
+    parser.add_argument(
+        '-s', '--service',
+        required=True,
+        help="Service the password will be used for. Put the name in quotes."
+    )
+    parser.add_argument(
+        '-u', '--username',
+        required=True,
+        help="Username used in the Service"
+    )
     parser.add_argument(
         '-l', '--length',
         type=int,
@@ -38,6 +48,7 @@ def main():
 
     print("Your generated password is:")
     print(result)
+    manager.store_password(args.service, args.username, result)
 
 
 if __name__ == '__main__':
