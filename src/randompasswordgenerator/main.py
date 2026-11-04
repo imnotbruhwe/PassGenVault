@@ -5,8 +5,8 @@ def main():
             print("Input the length of the password:")
             length = input()
             length = int(length)
-            if length <= 0:
-                print("The length of the password must be greater than 0")
+            if length <= 3 :
+                print("The length of the password must be greater than 3")
             else:
                 break
     while True:
