@@ -10,18 +10,19 @@ from randompasswordgenerator import clear_clipboard
 
 def main():
     parser = argparse.ArgumentParser(description="Cryptographically secure password generator.")
+    group = parser.add_mutually_exclusive_group()
 
     parser.add_argument(
         '-s', '--service',
         required=True,
         help="Service the password will be used for. Put the name in quotes."
     )
-    parser.add_argument(
+    group.add_argument(
         '-r', '--retrieve',
         action='store_true',
         help="Retrieves the username and password from the db using given service name."
     )
-    parser.add_argument(
+    group.add_argument(
         '-d', '--delete',
         action='store_true',
         help="Deletes the record for given service and username."
