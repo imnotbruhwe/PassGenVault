@@ -1,8 +1,13 @@
 import argparse
+import threading
+import pyperclip
+
 import generator
 import manager
 import TOF
-import pyperclip
+from randompasswordgenerator import clear_clipboard
+
+
 def main():
     parser = argparse.ArgumentParser(description="Cryptographically secure password generator.")
 
@@ -68,8 +73,10 @@ def main():
 
     result = generator.generate(args.length, args.numbers, args.specialchar)
 
-    print("Your generated password has been copied to clipboard!")
+    print("Your generated password has been copied to clipboard!\nYou have 60 seconds before the clipboard cleans!")
     pyperclip.copy(result)
+    timer = threading.Timer(60.0, clear_clipboard.clear_clip)
+    timer.start()
     manager.store_password(args.service, args.username, result)
 
 

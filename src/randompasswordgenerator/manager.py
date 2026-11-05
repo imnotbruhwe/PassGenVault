@@ -2,6 +2,11 @@ import sqlite3
 from cryptography.fernet import Fernet
 import os
 import pyperclip
+import threading
+
+from randompasswordgenerator import clear_clipboard
+
+
 def load_or_generate_key():
     key_filename = "master.key"
     if not os.path.exists(key_filename):
@@ -79,8 +84,10 @@ def retrieve_password(sservice):
         cipher_suite = Fernet(encryption_key)
         decrypted_password = cipher_suite.decrypt(encrypted_password)
         final_password = decrypted_password.decode('utf-8')
-        print(f"Username for service {sservice} is: {username}, and the password has been copied to clipboard!")
+        print(f"Username for service {sservice} is: {username}, and the password has been copied to clipboard!\n You have 60 seconds before the clipboard cleans!")
         pyperclip.copy(final_password)
+        timer = threading.Timer(60.0, clear_clipboard.clear_clip)
+        timer.start()
         return
     else:
         print("This service is not present in the database")
