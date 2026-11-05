@@ -18,13 +18,27 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS vault (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            service TEXT NOT NULL,
+            service TEXT NOT NULL UNIQUE,
             username TEXT NOT NULL,
             encrypted_password BLOB NOT NULL
         )
     """)
     conn.commit()
     conn.close()
+
+def check_service_exists(service):
+    init_db()
+    conn = sqlite3.connect("passwords.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id FROM vault
+        WHERE service=?""",(service,))
+
+    record = cursor.fetchone()
+    conn.close()
+    if record is not None:
+        return True
+    else: return False
 
 def store_password(service, username, raw_password):
     key = load_or_generate_key()
@@ -40,12 +54,16 @@ def store_password(service, username, raw_password):
     cursor.execute("""
         INSERT INTO vault (service, username, encrypted_password)
         VALUES (?,?,?)
+        ON CONFLICT(service) DO UPDATE SET
+            username=excluded.username, 
+            encrypted_password=excluded.encrypted_password
     """, (service,username,ciphertext))
 
     conn.commit()
     conn.close()
 
 def retrieve_password(sservice):
+    init_db()
     conn = sqlite3.connect("passwords.db")
     cursor = conn.cursor()
     cursor.execute("""

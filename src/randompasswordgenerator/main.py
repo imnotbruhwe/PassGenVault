@@ -1,6 +1,7 @@
 import argparse
 import generator
 import manager
+import TOF
 
 def main():
     parser = argparse.ArgumentParser(description="Cryptographically secure password generator.")
@@ -52,6 +53,17 @@ def main():
 
     if args.length <= 3:
         parser.error("The length of the password must be greater than 3.")
+
+    if manager.check_service_exists(args.service):
+        print("Username and password for this service already exist in the database.\n Do you wish to overwrite them? (y/n):")
+        while True:
+            try:
+                yesorno = input()
+                decision = TOF.TrueOrFalse(yesorno)
+                break
+            except ValueError: print("Wrong input! Please type y(Yes) or n(No).")
+        if decision is False:
+            return
 
 
     result = generator.generate(args.length, args.numbers, args.specialchar)
