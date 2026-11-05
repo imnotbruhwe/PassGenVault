@@ -11,8 +11,12 @@ def main():
         help="Service the password will be used for. Put the name in quotes."
     )
     parser.add_argument(
+        '-r', '--retrieve',
+        action='store_true',
+        help="Retrieves the username and password from the db using given service name."
+    )
+    parser.add_argument(
         '-u', '--username',
-        required=True,
         help="Username used in the Service"
     )
     parser.add_argument(
@@ -36,14 +40,20 @@ def main():
         help="Exclude special characters from the generated password."
     )
 
-    # Krok 3: Analiza wektora V w czasie Θ(1)
+
     args = parser.parse_args()
 
-    # Krok 4: Walidacja niezmiennika wejściowego (n > 3)
+    if args.retrieve:
+        manager.retrieve_password(args.service)
+        return
+
+    if args.username is None:
+        parser.error("Username must not be empty!")
+
     if args.length <= 3:
         parser.error("The length of the password must be greater than 3.")
 
-    # Krok 5: Wywołanie algorytmu podrzędnego
+
     result = generator.generate(args.length, args.numbers, args.specialchar)
 
     print("Your generated password is:")
