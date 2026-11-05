@@ -109,13 +109,17 @@ def retrieve_password(service, username):
         print("This service is not present in the database")
         return
 
+
 def delete_password(service, username):
     init_db()
     conn = sqlite3.connect("passwords.db")
     cursor = conn.cursor()
-    cursor.execute("""
+    cursor.execute(
+        """
         DELETE FROM vault WHERE service=? AND username=?
-    """,(service,username))
+    """,
+        (service, username),
+    )
     conn.commit()
     conn.close()
     print(f"Record for service: {service} and username: {username} has been removed.")

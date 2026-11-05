@@ -1,8 +1,8 @@
-
 def TrueOrFalse(input):
     low = input.lower()
-    if low == 'y':
+    if low == "y":
         return True
-    elif low == 'n':
+    elif low == "n":
         return False
-    else: raise ValueError
+    else:
+        raise ValueError

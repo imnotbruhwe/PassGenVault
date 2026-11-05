@@ -1,7 +1,8 @@
 import string
 import secrets
 
-def generate(length = 8, numbers = True, specialchar = True):
+
+def generate(length=8, numbers=True, specialchar=True):
     password = []
     alphabet = string.ascii_letters
     litera = secrets.choice(alphabet)
@@ -28,6 +29,5 @@ def generate(length = 8, numbers = True, specialchar = True):
 
     rng = secrets.SystemRandom()
     rng.shuffle(password)
-    final_password = ''.join(password)
+    final_password = "".join(password)
     return final_password
-
