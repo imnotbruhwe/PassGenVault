@@ -2,7 +2,7 @@ import argparse
 import generator
 import manager
 import TOF
-
+import pyperclip
 def main():
     parser = argparse.ArgumentParser(description="Cryptographically secure password generator.")
 
@@ -68,8 +68,8 @@ def main():
 
     result = generator.generate(args.length, args.numbers, args.specialchar)
 
-    print("Your generated password is:")
-    print(result)
+    print("Your generated password has been copied to clipboard!")
+    pyperclip.copy(result)
     manager.store_password(args.service, args.username, result)
 
 
