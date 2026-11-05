@@ -22,7 +22,13 @@ def main():
         help="Retrieves the username and password from the db using given service name."
     )
     parser.add_argument(
+        '-d', '--delete',
+        action='store_true',
+        help="Deletes the record for given service and username."
+    )
+    parser.add_argument(
         '-u', '--username',
+        required=True,
         help="Username used in the Service"
     )
     parser.add_argument(
@@ -50,17 +56,18 @@ def main():
     args = parser.parse_args()
 
     if args.retrieve:
-        manager.retrieve_password(args.service)
+        manager.retrieve_password(args.service, args.username)
         return
 
-    if args.username is None:
-        parser.error("Username must not be empty!")
+    if args.delete:
+        manager.delete_password(args.service, args.username)
+        return
 
     if args.length <= 3:
         parser.error("The length of the password must be greater than 3.")
 
-    if manager.check_service_exists(args.service):
-        print("Username and password for this service already exist in the database.\n Do you wish to overwrite them? (y/n):")
+    if manager.check_service_exists(args.service, args.username):
+        print("There already is a record for this service and username in the database.\n Do you wish to overwrite the data? (y/n):")
         while True:
             try:
                 yesorno = input()
@@ -73,7 +80,7 @@ def main():
 
     result = generator.generate(args.length, args.numbers, args.specialchar)
 
-    print("Your generated password has been copied to clipboard!\nYou have 60 seconds before the clipboard cleans!")
+    print(f"Your generated password for service: {args.service} and username:{args.username} has been copied to clipboard!\nYou have 60 seconds before the clipboard cleans!")
     pyperclip.copy(result)
     timer = threading.Timer(60.0, clear_clipboard.clear_clip)
     timer.start()

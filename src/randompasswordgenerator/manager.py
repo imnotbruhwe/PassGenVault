@@ -17,74 +17,90 @@ def load_or_generate_key():
     with open(key_filename, "rb") as f:
         return f.read()
 
+
 def init_db():
     conn = sqlite3.connect("passwords.db")
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS vault (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            service TEXT NOT NULL UNIQUE,
+            service TEXT NOT NULL,
             username TEXT NOT NULL,
-            encrypted_password BLOB NOT NULL
+            encrypted_password BLOB NOT NULL,
+            UNIQUE(service, username)
         )
     """)
     conn.commit()
     conn.close()
 
-def check_service_exists(service):
+
+def check_service_exists(service, username):
     init_db()
     conn = sqlite3.connect("passwords.db")
     cursor = conn.cursor()
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT id FROM vault
-        WHERE service=?""",(service,))
+        WHERE service=? AND username=?""",
+        (service, username),
+    )
 
     record = cursor.fetchone()
     conn.close()
     if record is not None:
         return True
-    else: return False
+    else:
+        return False
+
 
 def store_password(service, username, raw_password):
     key = load_or_generate_key()
     cipher_suite = Fernet(key)
 
-    password_bytes = raw_password.encode('utf-8')
+    password_bytes = raw_password.encode("utf-8")
     ciphertext = cipher_suite.encrypt(password_bytes)
 
     init_db()
     conn = sqlite3.connect("passwords.db")
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(
+        """
         INSERT INTO vault (service, username, encrypted_password)
         VALUES (?,?,?)
-        ON CONFLICT(service) DO UPDATE SET
+        ON CONFLICT(service, username) DO UPDATE SET
             username=excluded.username, 
             encrypted_password=excluded.encrypted_password
-    """, (service,username,ciphertext))
+    """,
+        (service, username, ciphertext),
+    )
 
     conn.commit()
     conn.close()
 
-def retrieve_password(sservice):
+
+def retrieve_password(service, username):
     init_db()
     conn = sqlite3.connect("passwords.db")
     cursor = conn.cursor()
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT username, encrypted_password FROM vault
-        WHERE service=?
-    """, (sservice,))
+        WHERE service=? AND username=?
+    """,
+        (service, username),
+    )
     record = cursor.fetchone()
     conn.close()
     if record is not None:
-        username = record[0]
         encrypted_password = record[1]
         encryption_key = load_or_generate_key()
         cipher_suite = Fernet(encryption_key)
         decrypted_password = cipher_suite.decrypt(encrypted_password)
-        final_password = decrypted_password.decode('utf-8')
-        print(f"Username for service {sservice} is: {username}, and the password has been copied to clipboard!\n You have 60 seconds before the clipboard cleans!")
+        final_password = decrypted_password.decode("utf-8")
+        print(
+            f"Username for service {service} is: {username}, and the password has been copied to clipboard!\n You have 60 seconds before the clipboard cleans!"
+        )
         pyperclip.copy(final_password)
         timer = threading.Timer(60.0, clear_clipboard.clear_clip)
         timer.start()
@@ -93,4 +109,14 @@ def retrieve_password(sservice):
         print("This service is not present in the database")
         return
 
-
+def delete_password(service, username):
+    init_db()
+    conn = sqlite3.connect("passwords.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        DELETE FROM vault WHERE service=? AND username=?
+    """,(service,username))
+    conn.commit()
+    conn.close()
+    print(f"Record for service: {service} and username: {username} has been removed.")
+    return
