@@ -44,3 +44,27 @@ def store_password(service, username, raw_password):
 
     conn.commit()
     conn.close()
+
+def retrieve_password(sservice):
+    conn = sqlite3.connect("passwords.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT username, encrypted_password FROM vault
+        WHERE service=?
+    """, (sservice,))
+    record = cursor.fetchone()
+    conn.close()
+    if record is not None:
+        username = record[0]
+        encrypted_password = record[1]
+        encryption_key = load_or_generate_key()
+        cipher_suite = Fernet(encryption_key)
+        decrypted_password = cipher_suite.decrypt(encrypted_password)
+        final_password = decrypted_password.decode('utf-8')
+        print(f"Username for service {sservice} is: {username}, and the password is: {final_password}")
+        return
+    else:
+        print("This service is not present in the database")
+        return
+
+
