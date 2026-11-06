@@ -1,14 +1,24 @@
 import sqlite3
 from cryptography.fernet import Fernet
 import os
+from pathlib import Path
 import pyperclip
 import threading
 
 from randompasswordgenerator import clear_clipboard
 
+# Wyznaczenie absolutnej ścieżki domowej dla środowiska operacyjnego
+APP_DIR = Path.home() / ".passgen_vault"
+
+# Idempotentna operacja gwarantująca istnienie wierzchołka w systemie plików
+APP_DIR.mkdir(parents=True, exist_ok=True)
+
+# Definicja stałych wektorów dla przestrzeni pamięci masowej
+DB_PATH = APP_DIR / "passwords.db"
+KEY_PATH = APP_DIR / "master.key"
 
 def load_or_generate_key():
-    key_filename = "master.key"
+    key_filename = KEY_PATH
     if not os.path.exists(key_filename):
         key = Fernet.generate_key()
         with open(key_filename, "wb") as f:
@@ -19,7 +29,7 @@ def load_or_generate_key():
 
 
 def init_db():
-    conn = sqlite3.connect("passwords.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS vault (
@@ -36,7 +46,7 @@ def init_db():
 
 def check_service_exists(service, username):
     init_db()
-    conn = sqlite3.connect("passwords.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
         """
@@ -61,7 +71,7 @@ def store_password(service, username, raw_password):
     ciphertext = cipher_suite.encrypt(password_bytes)
 
     init_db()
-    conn = sqlite3.connect("passwords.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute(
@@ -81,7 +91,7 @@ def store_password(service, username, raw_password):
 
 def retrieve_password(service, username):
     init_db()
-    conn = sqlite3.connect("passwords.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
         """
@@ -112,7 +122,7 @@ def retrieve_password(service, username):
 
 def delete_password(service, username):
     init_db()
-    conn = sqlite3.connect("passwords.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
         """
