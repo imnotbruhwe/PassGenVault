@@ -130,7 +130,13 @@ def delete_password(service, username):
     """,
         (service, username),
     )
+
+    deleted_rows = cursor.rowcount
+
     conn.commit()
     conn.close()
-    print(f"Record for service: {service} and username: {username} has been removed.")
+    if deleted_rows > 0 :
+        print(f"Record for service: {service} and username: {username} has been removed.")
+    else:
+        print(f"Deletion failed. No record found for service: {service} and username: {username}")
     return
