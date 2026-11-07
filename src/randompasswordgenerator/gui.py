@@ -64,7 +64,19 @@ class PasswordManagerGui:
             messagebox.showwarning("Error", "Either Service or Username is empty.")
             return
 
-        self.vault.retrieve_password(s, u)
+        result = self.vault.retrieve_password(s, u)
+
+        if result is not None:
+            pyperclip.copy(result)
+            timer = threading.Timer(60.0, clear_clipboard.clear_clip)
+            timer.start()
+
+            messagebox.showinfo(
+                "Success",
+                f"Password for user '{u}' at '{s}' copied to clipboard!\n\nClipboard will clear in 60 seconds."
+            )
+        else:
+            messagebox.showerror("Not Found", "This service is not present in the database.")
 
     def _action_delete(self):
 
@@ -77,8 +89,12 @@ class PasswordManagerGui:
 
         decision = messagebox.askyesno("Confirmation", "Do you really want to delete the password?")
         if decision:
-            self.vault.delete_password(s, u)
-            messagebox.showinfo("Done", "Record removed.")
+            result = self.vault.delete_password(s, u)
+            if result:
+                messagebox.showinfo("Done", "Record removed.")
+            else:
+                messagebox.showerror("Error","Deletion failed. No such record exists.")
+
 
     def build_ui(self):
 

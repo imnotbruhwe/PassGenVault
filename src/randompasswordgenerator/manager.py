@@ -2,10 +2,6 @@ import sqlite3
 from cryptography.fernet import Fernet
 import os
 from pathlib import Path
-import pyperclip
-import threading
-
-from randompasswordgenerator import clear_clipboard
 
 # Wyznaczenie absolutnej ścieżki domowej dla środowiska operacyjnego
 APP_DIR = Path.home() / ".passgen_vault"
@@ -81,19 +77,13 @@ class VaultManager:
         )
         record = self.cursor.fetchone()
         if record is not None:
-            retrieved_username = record[0]
             encrypted_password = record[1]
 
             decrypted_password = self.cipher_suite.decrypt(encrypted_password)
             final_password = decrypted_password.decode("utf-8")
-            print(
-                f"Username for service {service} is: {username}, and the password has been copied to clipboard!\n You have 60 seconds before the clipboard cleans!"
-            )
-            pyperclip.copy(final_password)
-            timer = threading.Timer(60.0, clear_clipboard.clear_clip)
-            timer.start()
+            return final_password
         else:
-            print("This service is not present in the database")
+            return None
 
     def delete_password(self, service, username):
 
@@ -108,17 +98,9 @@ class VaultManager:
         )
 
         deleted_rows = self.cursor.rowcount
-
         self.conn.commit()
 
-        if deleted_rows > 0:
-            print(
-                f"Record for service: {service} and username: {username} has been removed."
-            )
-        else:
-            print(
-                f"Deletion failed. No record found for service: {service} and username: {username}"
-            )
+        return deleted_rows > 0
 
     def __del__(self):
         if hasattr(self, 'conn'):
