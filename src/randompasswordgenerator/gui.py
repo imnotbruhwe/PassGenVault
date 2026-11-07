@@ -6,6 +6,7 @@ import pyperclip
 import threading
 from randompasswordgenerator import clear_clipboard
 
+
 class PasswordManagerGui:
     def __init__(self, root):
 
@@ -14,20 +15,17 @@ class PasswordManagerGui:
         self.root.geometry("500x500")
         self.root.resizable(False, False)
 
-        try:
-            self.vault = manager.VaultManager()
-        except Exception as e:
-            messagebox.showerror("Initialization Error",f"Failed to load Vault:\n{e}")
-            self.root.destroy()
-            return
+        self.vault = None
 
         self.service_var = tk.StringVar()
         self.username_var = tk.StringVar()
-        self.length_var = tk.IntVar(value = 8)
-        self.numbers_var = tk.BooleanVar(value = True)
-        self.special_var = tk.BooleanVar(value = True)
+        self.length_var = tk.IntVar(value=8)
+        self.numbers_var = tk.BooleanVar(value=True)
+        self.special_var = tk.BooleanVar(value=True)
 
-        self.build_ui()
+        self.master_password_var = tk.StringVar()
+
+        self.build_login_ui()
 
     def _action_generate(self):
         s = self.service_var.get()
@@ -42,8 +40,10 @@ class PasswordManagerGui:
             messagebox.showwarning("Error", "Password's length can't be less than 4.")
             return
         if self.vault.check_service_exists(s, u) == True:
-            decision = messagebox.askyesno("Collision",
-                                           "Record for this service and username already exists. Overwrite?")
+            decision = messagebox.askyesno(
+                "Collision",
+                "Record for this service and username already exists. Overwrite?",
+            )
             if decision is False:
                 return
 
@@ -54,7 +54,10 @@ class PasswordManagerGui:
         timer.daemon = True
 
         self.vault.store_password(s, u, result)
-        messagebox.showinfo("Success", "Password has been generated and is stored in clipboard for 60 seconds.")
+        messagebox.showinfo(
+            "Success",
+            "Password has been generated and is stored in clipboard for 60 seconds.",
+        )
 
     def _action_retrieve(self):
 
@@ -67,6 +70,9 @@ class PasswordManagerGui:
 
         result = self.vault.retrieve_password(s, u)
 
+        if result is False:
+            messagebox.showerror("Decryption Error","Failed to decrypt! Incorrect Master Password was used during login.")
+
         if result is not None:
             pyperclip.copy(result)
             timer = threading.Timer(60.0, clear_clipboard.clear_clip)
@@ -75,10 +81,12 @@ class PasswordManagerGui:
 
             messagebox.showinfo(
                 "Success",
-                f"Password for user '{u}' at '{s}' copied to clipboard!\n\nClipboard will clear in 60 seconds."
+                f"Password for user '{u}' at '{s}' copied to clipboard!\n\nClipboard will clear in 60 seconds.",
             )
         else:
-            messagebox.showerror("Not Found", "This service is not present in the database.")
+            messagebox.showerror(
+                "Not Found", "This service is not present in the database."
+            )
 
     def _action_delete(self):
 
@@ -89,13 +97,46 @@ class PasswordManagerGui:
             messagebox.showwarning("Error", "Either Service or Username is empty.")
             return
 
-        decision = messagebox.askyesno("Confirmation", "Do you really want to delete the password?")
+        decision = messagebox.askyesno(
+            "Confirmation", "Do you really want to delete the password?"
+        )
         if decision:
             result = self.vault.delete_password(s, u)
             if result:
                 messagebox.showinfo("Done", "Record removed.")
             else:
-                messagebox.showerror("Error","Deletion failed. No such record exists.")
+                messagebox.showerror("Error", "Deletion failed. No such record exists.")
+
+    def _action_unlock(self):
+
+        p = self.master_password_var.get()
+        if p == "":
+            messagebox.showwarning("Error","Master Password can't be empty")
+            return
+
+        try:
+            self.vault = manager.VaultManager(p)
+        except Exception as e:
+            messagebox.showerror("Initialization Error", f"Failed to load Vault:\n{e}")
+            self.root.destroy()
+            return
+
+        self.login_frame.destroy()
+        self.build_ui()
+
+    def build_login_ui(self):
+
+        self.login_frame = tk.Frame(self.root)
+        self.login_frame.pack(expand=True)
+
+        welcome_label = tk.Label(self.login_frame, text="Welcome to PassGen Vault\nEnter Master Password:", font=("Arial", 12))
+        welcome_label.grid(row=0,column=0,columnspan=2,pady=20)
+
+        master_entry = tk.Entry(self.login_frame, textvariable=self.master_password_var, show="*")
+        master_entry.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
+
+        unlock_button = tk.Button(self.login_frame, text="Unlock Vault", command=self._action_unlock)
+        unlock_button.grid(row=2, column=0, columnspan=2, pady=20)
 
 
     def build_ui(self):
@@ -103,8 +144,8 @@ class PasswordManagerGui:
         main_frame = tk.Frame(self.root)
         main_frame.pack(expand=True)
 
-        service_label = tk.Label(main_frame, text = "Service")
-        service_label.grid(row = 0, column = 0, padx = 10, pady = 10, sticky = "e")
+        service_label = tk.Label(main_frame, text="Service")
+        service_label.grid(row=0, column=0, padx=10, pady=10, sticky="e")
 
         service_entry = tk.Entry(main_frame, textvariable=self.service_var)
         service_entry.grid(row=0, column=1, padx=10, pady=10, sticky="w")
@@ -121,19 +162,31 @@ class PasswordManagerGui:
         length_entry = tk.Entry(main_frame, textvariable=self.length_var)
         length_entry.grid(row=2, column=1, padx=10, pady=10, sticky="w")
 
-        numbers_check = tk.Checkbutton(main_frame, text="Include Numbers", variable=self.numbers_var)
+        numbers_check = tk.Checkbutton(
+            main_frame, text="Include Numbers", variable=self.numbers_var
+        )
         numbers_check.grid(row=3, column=1, padx=10, pady=5, sticky="w")
 
-        special_check = tk.Checkbutton(main_frame, text="Include Special Characters", variable=self.special_var)
+        special_check = tk.Checkbutton(
+            main_frame, text="Include Special Characters", variable=self.special_var
+        )
         special_check.grid(row=4, column=1, padx=10, pady=5, sticky="w")
 
-        generate_button = tk.Button(main_frame, text="Generate Password", command=self._action_generate)
+        generate_button = tk.Button(
+            main_frame, text="Generate Password", command=self._action_generate
+        )
         generate_button.grid(row=5, columnspan=2, padx=10, pady=15)
 
-        retrieve_button = tk.Button(main_frame, text="Retrieve Username and Password", command=self._action_retrieve)
+        retrieve_button = tk.Button(
+            main_frame,
+            text="Retrieve Username and Password",
+            command=self._action_retrieve,
+        )
         retrieve_button.grid(row=6, column=0, padx=10, pady=15, sticky="ew")
 
-        delete_button = tk.Button(main_frame, text="Delete Record", command=self._action_delete)
+        delete_button = tk.Button(
+            main_frame, text="Delete Record", command=self._action_delete
+        )
         delete_button.grid(row=6, column=1, padx=10, pady=20, sticky="ew")
 
 
@@ -142,6 +195,7 @@ def run_gui():
     root = tk.Tk()
     app = PasswordManagerGui(root)
     root.mainloop()
+
 
 if __name__ == "__main__":
     run_gui()

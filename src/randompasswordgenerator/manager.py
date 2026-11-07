@@ -1,107 +1,101 @@
 import sqlite3
-from cryptography.fernet import Fernet
 import os
+import base64
 from pathlib import Path
+from cryptography.fernet import Fernet, InvalidToken
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-# Wyznaczenie absolutnej ścieżki domowej dla środowiska operacyjnego
 APP_DIR = Path.home() / ".passgen_vault"
-
-# Idempotentna operacja gwarantująca istnienie wierzchołka w systemie plików
 APP_DIR.mkdir(parents=True, exist_ok=True)
+if os.name == "posix":
+    os.chmod(APP_DIR, 0o700)
 
-# Definicja stałych wektorów dla przestrzeni pamięci masowej
 DB_PATH = APP_DIR / "passwords.db"
-KEY_PATH = APP_DIR / "master.key"
+SALT_PATH = APP_DIR / "salt.key"
 
 
 class VaultManager:
-    def __init__(self):
-        if not KEY_PATH.exists():
-            key = Fernet.generate_key()
-            with open(KEY_PATH, "wb") as f:
-                f.write(key)
+    def __init__(self, master_password: str):
+        # 1. Alokacja lub odczyt Soli Kryptograficznej (S)
+        if not SALT_PATH.exists():
+            salt = os.urandom(16)
+            # Atomowy zapis z restrykcyjnymi uprawnieniami
+            with open(SALT_PATH, "wb") as f:
+                f.write(salt)
+            if os.name == "posix":
+                os.chmod(SALT_PATH, 0o600)
+        else:
+            with open(SALT_PATH, "rb") as f:
+                salt = f.read()
 
-        with open(KEY_PATH, "rb") as f:
-            self.key = f.read()
+        # 2. Wyznaczenie Klucza (K) w czasie O(c)
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            iterations=600000,
+        )
 
-        self.cipher_suite = Fernet(self.key)
+        # Transformacja hasła P i generowanie K_final
+        key = base64.urlsafe_b64encode(kdf.derive(master_password.encode("utf-8")))
+        self.cipher_suite = Fernet(key)
 
         self.conn = sqlite3.connect(DB_PATH)
         self.cursor = self.conn.cursor()
 
         self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS vault (
+            CREATE TABLE IF NOT EXISTS vault(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 service TEXT NOT NULL,
                 username TEXT NOT NULL,
                 encrypted_password BLOB NOT NULL,
-                UNIQUE(service, username))""")
+                UNIQUE(service, username)
+            )""")
         self.conn.commit()
 
     def check_service_exists(self, service, username):
         self.cursor.execute(
-            """
-            SELECT id FROM vault
-            WHERE service=? AND username=?""",
-            (service, username),
+            "SELECT id FROM vault WHERE service=? AND username=?", (service, username)
         )
         return self.cursor.fetchone() is not None
 
     def store_password(self, service, username, raw_password):
-
         password_bytes = raw_password.encode("utf-8")
         ciphertext = self.cipher_suite.encrypt(password_bytes)
-
         self.cursor.execute(
             """
             INSERT INTO vault (service, username, encrypted_password)
             VALUES (?, ?, ?) ON CONFLICT(service, username) DO
-            UPDATE SET
-                username=excluded.username,
-                encrypted_password=excluded.encrypted_password
+            UPDATE SET username=excluded.username, encrypted_password=excluded.encrypted_password
             """,
             (service, username, ciphertext),
         )
         self.conn.commit()
 
     def retrieve_password(self, service, username):
-
         self.cursor.execute(
-            """
-            SELECT username, encrypted_password
-            FROM vault
-            WHERE service = ?
-              AND username = ?
-            """,
+            "SELECT username, encrypted_password FROM vault WHERE service = ? AND username = ?",
             (service, username),
         )
         record = self.cursor.fetchone()
         if record is not None:
-            encrypted_password = record[1]
-
-            decrypted_password = self.cipher_suite.decrypt(encrypted_password)
-            final_password = decrypted_password.decode("utf-8")
-            return final_password
-        else:
-            return None
+            try:
+                decrypted_password = self.cipher_suite.decrypt(record[1])
+                return decrypted_password.decode("utf-8")
+            except InvalidToken:
+                # Odrzucenie próby odszyfrowania z powodu błędnego K_final
+                return False
+        return None
 
     def delete_password(self, service, username):
-
         self.cursor.execute(
-            """
-            DELETE
-            FROM vault
-            WHERE service = ?
-              AND username = ?
-            """,
-            (service, username),
+            "DELETE FROM vault WHERE service = ? AND username = ?", (service, username)
         )
-
         deleted_rows = self.cursor.rowcount
         self.conn.commit()
-
         return deleted_rows > 0
 
     def __del__(self):
-        if hasattr(self, 'conn'):
+        if hasattr(self, "conn"):
             self.conn.close()
