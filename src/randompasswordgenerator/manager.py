@@ -90,20 +90,26 @@ class VaultManager:
         )
         self.conn.commit()
 
-    def retrieve_password(self, service, username):
-        self.cursor.execute(
-            "SELECT username, encrypted_password FROM vault WHERE service = ? AND username = ?",
-            (service, username),
-        )
-        record = self.cursor.fetchone()
-        if record is not None:
+    def retrieve_service_records(self, service):
+        self.cursor.execute("""
+            SELECT username, encrypted_password
+            FROM vault
+            WHERE service=?""",(service,))
+
+        records = self.cursor.fetchall()
+
+        results_list = []
+
+        for record in records:
+            username = record[0]
+            encrypted_password = record[1]
             try:
-                decrypted_password = self.cipher_suite.decrypt(record[1])
-                return decrypted_password.decode("utf-8")
+                decrypted = self.cipher_suite.decrypt(encrypted_password).decode('utf-8')
+                results_list.append((username,decrypted))
             except InvalidToken:
-                # Odrzucenie próby odszyfrowania z powodu błędnego K_final
                 return False
-        return None
+
+        return results_list
 
     def delete_password(self, service, username):
         self.cursor.execute(

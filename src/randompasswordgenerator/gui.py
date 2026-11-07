@@ -63,32 +63,24 @@ class PasswordManagerGui:
     def _action_retrieve(self):
 
         s = self.service_var.get()
-        u = self.username_var.get()
 
-        if s == "" or u == "":
-            messagebox.showwarning("Error", "Either Service or Username is empty.")
+        if s == "":
+            messagebox.showwarning("Error","Service field can not be empty.")
             return
 
-        result = self.vault.retrieve_password(s, u)
+        results = self.vault.retrieve_service_records(s)
 
-        if result is False:
-            messagebox.showerror("Decryption Error","Failed to decrypt! Incorrect Master Password was used during login.")
-
-        if result is not None:
-            pyperclip.copy(result)
-            timer = threading.Timer(60.0, clear_clipboard.clear_clip)
-            timer.daemon = True
-            timer.start()
-
-
-            messagebox.showinfo(
-                "Success",
-                f"Password for user '{u}' at '{s}' copied to clipboard!\n\nClipboard will clear in 60 seconds.",
-            )
+        if results is False:
+            messagebox.showerror("Decryption Error","Failed to decrypt! Incorrect Master Password.")
+        elif len(results) == 0:
+            messagebox.showerror("Not Found",f"No records found for service: {s}.")
         else:
-            messagebox.showerror(
-                "Not Found", "This service is not present in the database."
-            )
+            display_text = f"Records found for service: {s}\n"
+            for username, password in results:
+                display_text += f"User: {username}\nPassword: {password}\n"
+                display_text += "-" * 30 + "\n"
+
+            messagebox.showinfo("Retrieved Records", display_text)
 
     def _action_delete(self):
 
@@ -179,11 +171,7 @@ class PasswordManagerGui:
         )
         generate_button.grid(row=5, columnspan=2, padx=10, pady=15)
 
-        retrieve_button = tk.Button(
-            main_frame,
-            text="Retrieve Username and Password",
-            command=self._action_retrieve,
-        )
+        retrieve_button = tk.Button(main_frame,text="Retrieve Records For Given Service", command=self._action_retrieve)
         retrieve_button.grid(row=6, column=0, padx=10, pady=15, sticky="ew")
 
         delete_button = tk.Button(
