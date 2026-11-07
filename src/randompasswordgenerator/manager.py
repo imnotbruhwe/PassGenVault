@@ -13,6 +13,7 @@ if os.name == "posix":
 
 DB_PATH = APP_DIR / "passwords.db"
 SALT_PATH = APP_DIR / "salt.key"
+VERIFY_PATH = APP_DIR / "verify.key"
 
 
 class VaultManager:
@@ -40,6 +41,22 @@ class VaultManager:
         # Transformacja hasła P i generowanie K_final
         key = base64.urlsafe_b64encode(kdf.derive(master_password.encode("utf-8")))
         self.cipher_suite = Fernet(key)
+
+        if not VERIFY_PATH.exists():
+            canary_ciphertext = self.cipher_suite.encrypt(b"VALID")
+            with open(VERIFY_PATH, "wb") as f:
+                f.write(canary_ciphertext)
+            if os.name == 'posix':
+                os.chmod(VERIFY_PATH, 0o600)
+        else:
+            with open(VERIFY_PATH, "rb") as f:
+                canary_ciphertext = f.read()
+            try:
+                decrypted_canary = self.cipher_suite.decrypt(canary_ciphertext)
+                if decrypted_canary != b"VALID":
+                    raise ValueError("Wrong Master Password.")
+            except InvalidToken:
+                raise ValueError("Wrong Master Password.")
 
         self.conn = sqlite3.connect(DB_PATH)
         self.cursor = self.conn.cursor()

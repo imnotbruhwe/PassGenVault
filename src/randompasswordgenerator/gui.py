@@ -50,8 +50,9 @@ class PasswordManagerGui:
         result = generator.generate(l, n, c)
         pyperclip.copy(result)
         timer = threading.Timer(60.0, clear_clipboard.clear_clip)
-        timer.start()
         timer.daemon = True
+        timer.start()
+
 
         self.vault.store_password(s, u, result)
         messagebox.showinfo(
@@ -76,8 +77,9 @@ class PasswordManagerGui:
         if result is not None:
             pyperclip.copy(result)
             timer = threading.Timer(60.0, clear_clipboard.clear_clip)
-            timer.start()
             timer.daemon = True
+            timer.start()
+
 
             messagebox.showinfo(
                 "Success",
@@ -118,7 +120,7 @@ class PasswordManagerGui:
             self.vault = manager.VaultManager(p)
         except Exception as e:
             messagebox.showerror("Initialization Error", f"Failed to load Vault:\n{e}")
-            self.root.destroy()
+            self.master_password_var.set("")
             return
 
         self.login_frame.destroy()
