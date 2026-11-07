@@ -58,19 +58,19 @@ def main():
     )
 
     args = parser.parse_args()
-
+    vault = manager.VaultManager()
     if args.retrieve:
-        manager.retrieve_password(args.service, args.username)
+        vault.retrieve_password(args.service, args.username)
         return
 
     if args.delete:
-        manager.delete_password(args.service, args.username)
+        vault.delete_password(args.service, args.username)
         return
 
     if args.length <= 3:
         parser.error("The length of the password must be greater than 3.")
 
-    if manager.check_service_exists(args.service, args.username):
+    if vault.check_service_exists(args.service, args.username):
         print(
             "There already is a record for this service and username in the database.\n Do you wish to overwrite the data? (y/n):"
         )
@@ -92,7 +92,7 @@ def main():
     pyperclip.copy(result)
     timer = threading.Timer(60.0, clear_clipboard.clear_clip)
     timer.start()
-    manager.store_password(args.service, args.username, result)
+    vault.store_password(args.service, args.username, result)
 
 
 if __name__ == "__main__":
