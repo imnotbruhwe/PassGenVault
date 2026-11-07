@@ -51,9 +51,10 @@ class PasswordManagerGui:
         pyperclip.copy(result)
         timer = threading.Timer(60.0, clear_clipboard.clear_clip)
         timer.start()
+        timer.daemon = True
 
         self.vault.store_password(s, u, result)
-        messagebox.showinfo("Success", "The password has been generated and stored in the db.")
+        messagebox.showinfo("Success", "Password has been generated and is stored in clipboard for 60 seconds.")
 
     def _action_retrieve(self):
 
@@ -70,6 +71,7 @@ class PasswordManagerGui:
             pyperclip.copy(result)
             timer = threading.Timer(60.0, clear_clipboard.clear_clip)
             timer.start()
+            timer.daemon = True
 
             messagebox.showinfo(
                 "Success",
