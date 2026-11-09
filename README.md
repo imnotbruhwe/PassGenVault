@@ -1,3 +1,5 @@
+<img src="docs/img.png" width="50%" alt="PassGenVault">
+
 # PassGen Vault
 ![Python](https://img.shields.io/badge/python-3.14-blue)
 ![Tests](https://img.shields.io/badge/tests-pytest-green)
@@ -6,7 +8,7 @@ A small desktop password manager written in Python. It generates random password
 
 > Educational project. It has not been audited. Do not use it as your only copy of important passwords.
 
-![PassGenVault](docs/screenshot.png)
+<img src="docs/screenshot.png" width="50%" alt="PassGenVaultUI">
 
 ## Features
 
