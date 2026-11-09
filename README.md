@@ -6,6 +6,8 @@ A small desktop password manager written in Python. It generates random password
 
 > Educational project. It has not been audited. Do not use it as your only copy of important passwords.
 
+![PassGenVault](docs/screenshot.png)
+
 ## Features
 
 - Cryptographically secure password generation (`secrets`)
