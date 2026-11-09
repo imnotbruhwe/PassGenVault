@@ -48,12 +48,14 @@ On POSIX systems the directory is created with `0700` and the key files with `06
 
 ## Requirements
 
-- Python 3.10 or newer
+- Python 3.14 or newer
 - `tkinter` (bundled with most Python installers; on Debian/Ubuntu: `sudo apt install python3-tk`)
 - [`cryptography`](https://pypi.org/project/cryptography/)
 - [`pyperclip`](https://pypi.org/project/pyperclip/) (on Linux it also needs `xclip` or `xsel`)
 
 ## Installation
+
+Run the commands from the project root.
 
 With [uv](https://docs.astral.sh/uv/):
 
@@ -76,7 +78,7 @@ pip install cryptography pyperclip
 ## Usage
 
 ```bash
-python main.py
+uv run passgen
 ```
 
 1. **First launch:** choose a master password (at least 12 characters) and repeat it. **It cannot be recovered.**
@@ -85,21 +87,42 @@ python main.py
 4. **Retrieve:** enter a *Service* and click *Retrieve Records For Given Service* to see all stored usernames and passwords for it.
 5. **Delete:** enter *Service* and *Username* and click *Delete Record*.
 
+## Tests
+
+The project has a [pytest](https://docs.pytest.org/) suite covering the generator and the vault manager. Vault tests run against a temporary directory, so your real `~/.passgen_vault` is never touched.
+
+```bash
+pip install pytest      # or: uv add --dev pytest
+pytest -v
+```
+
+Covered cases include password length and character rules, minimum length validation, storing, overwriting and deleting records, wrong master password, persistence after reopening, no plain-text passwords in the database, and corrupted records.
+
 ## Project structure
 
 ```
-randompasswordgenerator/
-├── __init__.py
-├── main.py              # entry point
-├── gui.py               # tkinter interface
-├── manager.py           # VaultManager: key derivation, encryption, SQLite
-├── generator.py         # password generation
-└── clear_clipboard.py   # conditional clipboard clearing
+randompasswordgenerator/        
+├── pyproject.toml
+├── README.md
+├── .gitignore
+├── .python-version
+├── src/
+│   └── randompasswordgenerator/
+│       ├── __init__.py
+│       ├── main.py
+│       ├── gui.py
+│       ├── manager.py
+│       ├── generator.py
+│       └── clear_clipboard.py
+└── tests/
+    ├── test_generator.py
+    └── test_manager.py
 ```
 
 ## Security notes and limitations
 
 - **The master password cannot be recovered.** If you forget it, the stored passwords are lost.
+- **In case of lost password** deletion of all files in directory `~/.passgen_vault` is needed.
 - Only passwords are encrypted. `service` and `username` are stored in plain text in the database.
 - Retrieved passwords are displayed in a dialog window, so be mindful of shoulder surfing.
 - Clipboard clearing relies on a timer inside the running app. If you close the application before the 60 seconds pass, the password stays in the clipboard.
@@ -110,13 +133,7 @@ randompasswordgenerator/
 
 ## Possible improvements
 
-- Unit tests (`pytest`) for the generator and the vault manager
 - Copy retrieved passwords to the clipboard instead of showing them
 - List of stored services instead of typing names
 - Auto-lock after inactivity
 - Master password change (re-encrypting all records)
-- Encrypting service and username fields
-
-## License
-
-Add a license of your choice (e.g. MIT) before publishing.
