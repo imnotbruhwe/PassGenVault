@@ -16,6 +16,12 @@ SALT_PATH = APP_DIR / "salt.key"
 VERIFY_PATH = APP_DIR / "verify.key"
 
 
+def vault_exists():
+    return VERIFY_PATH.exists()
+
+class CorruptedRecordError(Exception):
+    pass
+
 class VaultManager:
     def __init__(self, master_password: str):
         # 1. Alokacja lub odczyt Soli Kryptograficznej (S)
@@ -107,7 +113,8 @@ class VaultManager:
                 decrypted = self.cipher_suite.decrypt(encrypted_password).decode('utf-8')
                 results_list.append((username,decrypted))
             except InvalidToken:
-                return False
+                raise CorruptedRecordError(f"Cannot decrypt record for user: {username}.")
+
 
         return results_list
 
@@ -122,3 +129,4 @@ class VaultManager:
     def __del__(self):
         if hasattr(self, "conn"):
             self.conn.close()
+

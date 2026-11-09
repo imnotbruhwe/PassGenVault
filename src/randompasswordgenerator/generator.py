@@ -2,8 +2,10 @@ import string
 import secrets
 
 
-def generate(length=8, numbers=True, specialchar=True):
+def generate(length=16, numbers=True, specialchar=True):
     password = []
+    if length < 12:
+        raise ValueError("The password must be at least 4 characters long.")
     alphabet = string.ascii_letters
     litera = secrets.choice(alphabet)
     password.append(litera)
