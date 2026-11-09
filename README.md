@@ -1,4 +1,6 @@
 # PassGen Vault
+![Python](https://img.shields.io/badge/python-3.14-blue)
+![Tests](https://img.shields.io/badge/tests-pytest-green)
 
 A small desktop password manager written in Python. It generates random passwords, stores them encrypted in a local SQLite database, and protects everything with a single master password. The GUI is built with `tkinter`.
 
