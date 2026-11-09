@@ -1,4 +1,4 @@
-import gui
+from randompasswordgenerator import gui
 
 
 def main():

@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-randompasswordgenerator = "randompasswordgenerator:main"
+passgen = "randompasswordgenerator.main:main"
 
 [build-system]
 requires = ["uv_build>=0.12.23,<0.13.0"]
